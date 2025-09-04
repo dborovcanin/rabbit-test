@@ -1,0 +1,89 @@
+services:
+  rabbitmq1.local:
+    image: rabbitmq:4-management
+    hostname: rabbitmq1
+    container_name: rabbitmq1
+    cpus: 1.0
+    mem_limit: 128M
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "supersecretcookie"
+      RABBITMQ_USE_LONGNAME: "true"
+      RABBITMQ_NODENAME: "rabbit@rabbitmq1.local"
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    networks:
+      - rabbitnet
+
+  rabbitmq2.local:
+    image: rabbitmq:4-management
+    hostname: rabbitmq2
+    container_name: rabbitmq2
+    cpus: 1.0
+    mem_limit: 128M
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "supersecretcookie"
+      RABBITMQ_USE_LONGNAME: "true"
+      RABBITMQ_NODENAME: "rabbit@rabbitmq2.local"
+    depends_on:
+      - rabbitmq1.local
+    volumes:
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+    networks:
+      - rabbitnet
+
+  # rabbitmq3.local:
+  #   image: rabbitmq:4-management
+  #   hostname: rabbitmq3
+  #   container_name: rabbitmq3
+  #   cpus: 2.0
+  #   mem_limit: 512M
+  #   environment:
+  #     RABBITMQ_ERLANG_COOKIE: "supersecretcookie"
+  #     RABBITMQ_USE_LONGNAME: "true"
+  #     RABBITMQ_NODENAME: "rabbit@rabbitmq3.local"
+  #   depends_on:
+  #     - rabbitmq1.local
+  #   volumes:
+  #     - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+  #   networks:
+  #     - rabbitnet
+
+  # rabbitmq4.local:
+  #   image: rabbitmq:4-management
+  #   hostname: rabbitmq4
+  #   container_name: rabbitmq4
+  #   cpus: 2.0
+  #   mem_limit: 512M
+  #   environment:
+  #     RABBITMQ_ERLANG_COOKIE: "supersecretcookie"
+  #     RABBITMQ_USE_LONGNAME: "true"
+  #     RABBITMQ_NODENAME: "rabbit@rabbitmq4.local"
+  #   depends_on:
+  #     - rabbitmq1.local
+  #   volumes:
+  #     - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+  #   networks:
+  #     - rabbitnet
+
+  # HAProxy load balancer to expose a single endpoint
+  haproxy:
+    image: haproxy:latest
+    container_name: haproxy
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+      - "8404:8404" # HAPROXY UI
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - rabbitmq1.local
+      - rabbitmq2.local
+      # - rabbitmq3.local
+      # - rabbitmq4.local
+    networks:
+      - rabbitnet
+
+networks:
+  rabbitnet:
+    driver: bridge
+
